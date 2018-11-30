@@ -26,7 +26,6 @@
     "compressing": "1.1.0",
     "graceful-fs": "4.1.11",
     "lodash.curry": "4.1.1",
-    "mute": "2.0.6",
     "mv": "2.1.1",
     "npm": "4.2.0",
     "rimraf": "2.5.4"

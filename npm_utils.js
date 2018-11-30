@@ -4,13 +4,17 @@ const curry = require('lodash.curry')
 const async = require('async')
 
 const publishAsync = function (registry, path, callback) {
-
+    console.log('publishAsync', registry, path)
     npm.load({
-        registry: registry
+        registry: registry,
+        
+        "strict-ssl": false,
+        "always-auth": true
+        
     }, () => {
 
         let tgz = path + '.tgz'
-
+        console.log('loaded, publishing', tgz)
         npm.commands.publish([tgz], (err, data) => {
 
             if (err) return callback(err);
@@ -21,13 +25,16 @@ const publishAsync = function (registry, path, callback) {
 }
 
 const getTarball = function (moduleName, registry, version, callback) {
-
+    console.log('getTarball', moduleName, registry, version);
     const versionedModule = [moduleName, version].join('@')
 
     npm.load({
-        registry: registry
+        registry: registry,
+        
+        "strict-ssl": false,
+        "always-auth": true
     }, () => {
-
+        console.log('loaded calling pack', moduleName, registry, version);
         npm.commands.pack([versionedModule], (err, data) => {
 
             if (err) return callback(err);
@@ -51,7 +58,7 @@ const getTarball = function (moduleName, registry, version, callback) {
 
 }
 
-function getRemainingVersions (moduleName, oldRegistry, newRegistry, oldRegistryVersions) {
+function getRemainingVersions (moduleName, oldRegistry, newRegistry, oldRegistryVersions, newRegistryNpmOptions) {
 
     return new Promise((resolve) => {
 
@@ -82,12 +89,15 @@ function getRemainingVersions (moduleName, oldRegistry, newRegistry, oldRegistry
 
 }
 
-module.exports.getVersionList = function (moduleName, oldRegistry, newRegistry) {
+module.exports.getVersionList = function (moduleName, oldRegistry, newRegistry, oldRegistryNpmOptions = {}, newRegistryNpmOptions = {}) {
 
     return new Promise((resolve, reject) => {
 
         npm.load({
-            registry: oldRegistry
+            registry: oldRegistry,
+            
+            "strict-ssl": false,
+            "always-auth": true
         }, () => {
 
             npm.commands.info([moduleName], function (err, data) {
@@ -98,7 +108,7 @@ module.exports.getVersionList = function (moduleName, oldRegistry, newRegistry) 
                 const oldRegistryVersions = data[latest].versions;
                 console.log('Old Registry Versions', oldRegistryVersions);
 
-                return getRemainingVersions(moduleName, oldRegistry, newRegistry, oldRegistryVersions)
+                return getRemainingVersions(moduleName, oldRegistry, newRegistry, oldRegistryVersions, newRegistryNpmOptions)
                     .then((remainingVersions) => {
                         resolve(remainingVersions);
                     });
@@ -109,7 +119,7 @@ module.exports.getVersionList = function (moduleName, oldRegistry, newRegistry) 
 
 
 module.exports.getTarballs = function (moduleName, registry, versions) {
-
+    console.log('getTarballs', moduleName, registry, versions)
     let curried_getTarball = curry(getTarball)
     let series = versions.map((version) => curried_getTarball(moduleName, registry, version))
 
@@ -127,7 +137,7 @@ module.exports.getTarballs = function (moduleName, registry, versions) {
 
 
 module.exports.publishSeries = function (registry, packageFolders) {
-
+    console.log('publishSeries', registry, packageFolders)
     let curried_publishAsync = curry(publishAsync),
         series = packageFolders.map((folder) => curried_publishAsync(registry, folder))
 
@@ -142,6 +152,7 @@ module.exports.publishSeries = function (registry, packageFolders) {
 }
 
 const packageFromPath = function (path) {
+    console.log('packageFromPath', path)
     return path
             .replace(process.cwd() + '/npm-migrate_tmp/', '')
             .replace('/package', '')

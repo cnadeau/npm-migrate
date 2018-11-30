@@ -1,5 +1,3 @@
-const mute = require('mute')
-const npm = require('npm')
 const curry = require('lodash.curry')
 
 const { unpack, pack } = require('./tgz')
@@ -7,12 +5,7 @@ const cleanup = require('./cleanup')
 const { getVersionList, getTarballs, publishSeries } = require('./npm_utils')
 const updatePackage = require('./update')
 
-module.exports = function (moduleName, oldRegistry, newRegistry, options = { debug: false }) {
-
-    if (!options.debug) {
-        var unmute = mute()
-    }
-
+module.exports = function (moduleName, oldRegistry, newRegistry, options = { debug: false }, npmOptions = {}) {
     let curried_updatePackage = curry(updatePackage)
     curried_updatePackage = curried_updatePackage(newRegistry)
 
@@ -22,6 +15,7 @@ module.exports = function (moduleName, oldRegistry, newRegistry, options = { deb
     let curried_publishSeries = curry(publishSeries)
     curried_publishSeries = curried_publishSeries(newRegistry)
 
+
     return getVersionList(moduleName, oldRegistry, newRegistry)
         .then(curried_getTarballs)
         .then(unpack)
@@ -30,7 +24,6 @@ module.exports = function (moduleName, oldRegistry, newRegistry, options = { deb
         .then(curried_publishSeries)
         .then(cleanup)
         .then((results) => {
-            if (unmute) unmute();
             return results
         })
         .catch((err) => {
